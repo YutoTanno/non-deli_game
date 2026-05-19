@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(Copy-Item \"C:\\\\workspace\\\\NodeJs\\\\ノンデリ診断\\\\files\\\\questions.json\" \"C:\\\\workspace\\\\NodeJs\\\\ノンデリ診断\\\\questions.json\")",
+      "Bash(Copy-Item \"C:\\\\workspace\\\\NodeJs\\\\ノンデリ診断\\\\files\\\\og-preview.html\" \"C:\\\\workspace\\\\NodeJs\\\\ノンデリ診断\\\\og-preview.html\")",
+      "Bash(Write-Host \"コピー完了\")"
+    ]
+  }
+}

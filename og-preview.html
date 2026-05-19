@@ -1,0 +1,295 @@
+<!--
+  ノンデリ診断ゲーム - OGP画像 プレビュー / 静的生成テンプレート
+
+  用途:
+    1. デザインの目視確認: ブラウザで開いて「?score=73」のようにパラメータを変えて見え方を確認
+    2. 静的OGP画像の生成: Puppeteer等でスクリーンショットして PNG として書き出し、
+       Vercel/Cloudflare などの edge function を使わない環境でも静的OGPを用意可能
+
+  URLパラメータ:
+    ?score=0-100   表示するスコア (デフォルト 50)
+
+  スクリーンショット例 (Node.js + Puppeteer):
+    const browser = await puppeteer.launch();
+    const page = await browser.newPage();
+    await page.setViewport({ width: 1200, height: 630, deviceScaleFactor: 2 });
+    await page.goto('file:///path/to/og-preview.html?score=73&raw=1');
+    await page.screenshot({ path: 'og-73.png', clip: { x: 0, y: 0, width: 1200, height: 630 } });
+-->
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>OGP Preview - ノンデリ診断ゲーム</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Reggae+One&family=M+PLUS+Rounded+1c:wght@500;900&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html, body {
+    font-family: 'M PLUS Rounded 1c', sans-serif;
+    background: #2a2a2a;
+    color: #fff;
+  }
+
+  body {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px;
+  }
+
+  body.raw {
+    background: transparent;
+    padding: 0;
+    align-items: flex-start;
+    justify-content: flex-start;
+    min-height: 630px;
+  }
+
+  /* 開発用のコントロールUI (raw=1 のとき非表示) */
+  .controls {
+    background: #1a1a1a;
+    border: 2px solid #444;
+    border-radius: 12px;
+    padding: 16px 20px;
+    margin-bottom: 24px;
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    flex-wrap: wrap;
+    font-weight: 700;
+    font-size: 14px;
+  }
+
+  body.raw .controls { display: none; }
+
+  .controls label { display: flex; align-items: center; gap: 8px; }
+
+  .controls input[type=range] { width: 200px; }
+  .controls input[type=number] {
+    width: 60px;
+    padding: 4px 8px;
+    border-radius: 6px;
+    border: 1px solid #555;
+    background: #333;
+    color: white;
+    font-family: inherit;
+    font-weight: 700;
+  }
+
+  .controls .preset {
+    background: #555;
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-family: inherit;
+    font-weight: 700;
+  }
+  .controls .preset:hover { background: #777; }
+
+  /* ===== OGP本体 (1200 x 630) ===== */
+  .og-card {
+    width: 1200px;
+    height: 630px;
+    background: #FFF4E0;
+    background-image:
+      radial-gradient(circle at 20% 20%, #FFE8C2 0%, transparent 40%),
+      radial-gradient(circle at 80% 80%, #FFE8C2 0%, transparent 40%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+    color: #1a1a1a;
+    flex-shrink: 0;
+  }
+
+  /* ブラウザでプレビュー表示するとき自動縮小 */
+  body:not(.raw) .og-card {
+    transform: scale(var(--scale, 0.7));
+    transform-origin: top center;
+    margin-bottom: calc(-1 * 630px * (1 - var(--scale, 0.7)));
+  }
+
+  .deco {
+    position: absolute;
+    border-radius: 50%;
+  }
+  .deco-1 {
+    top: -80px; right: -80px;
+    width: 240px; height: 240px;
+    background: #FFD93D;
+    opacity: 0.35;
+  }
+  .deco-2 {
+    bottom: -100px; left: -100px;
+    width: 280px; height: 280px;
+    background: #FF3D7F;
+    opacity: 0.18;
+  }
+
+  .inner {
+    position: relative;
+    z-index: 1;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .header {
+    font-size: 40px;
+    font-weight: 900;
+    letter-spacing: 0.1em;
+    margin-bottom: 4px;
+  }
+
+  .emoji {
+    font-size: 110px;
+    line-height: 1.1;
+  }
+
+  .score-label {
+    font-size: 28px;
+    opacity: 0.7;
+  }
+
+  .score-row {
+    display: flex;
+    align-items: baseline;
+    margin-top: 4px;
+    margin-bottom: 28px;
+  }
+
+  .score-num {
+    font-family: 'Reggae One', cursive;
+    font-size: 220px;
+    color: #FF3D7F;
+    line-height: 0.9;
+    text-shadow: 8px 8px 0 #1a1a1a;
+  }
+
+  .score-unit {
+    font-family: 'Reggae One', cursive;
+    font-size: 72px;
+    color: #1a1a1a;
+    margin-left: 8px;
+  }
+
+  .rank-badge {
+    border: 6px solid #1a1a1a;
+    border-radius: 24px;
+    padding: 18px 56px;
+    font-size: 52px;
+    font-weight: 900;
+    box-shadow: 10px 10px 0 #1a1a1a;
+    letter-spacing: 0.05em;
+  }
+
+  .hashtag {
+    margin-top: 28px;
+    font-size: 24px;
+    color: #1a1a1a;
+    opacity: 0.6;
+    font-family: 'Reggae One', cursive;
+    letter-spacing: 0.1em;
+  }
+
+  /* 1240px以下なら自動でさらに縮小 */
+  @media (max-width: 1240px) {
+    body:not(.raw) .og-card { --scale: 0.5; }
+  }
+  @media (max-width: 800px) {
+    body:not(.raw) .og-card { --scale: 0.3; }
+  }
+</style>
+</head>
+<body>
+
+<div class="controls">
+  <label>
+    Score:
+    <input id="scoreRange" type="range" min="0" max="100" value="50">
+    <input id="scoreInput" type="number" min="0" max="100" value="50">
+  </label>
+  <button class="preset" data-score="10">😇 神</button>
+  <button class="preset" data-score="30">😊 上手</button>
+  <button class="preset" data-score="50">😅 普通</button>
+  <button class="preset" data-score="70">💥 寄り</button>
+  <button class="preset" data-score="95">🔥 無双</button>
+</div>
+
+<div class="og-card" id="ogCard">
+  <div class="deco deco-1"></div>
+  <div class="deco deco-2"></div>
+  <div class="inner">
+    <div class="header">ノンデリ診断ゲーム</div>
+    <div class="emoji" id="emoji">😅</div>
+    <div class="score-label">あなたのノンデリ度</div>
+    <div class="score-row">
+      <span class="score-num" id="score">50</span>
+      <span class="score-unit">点</span>
+    </div>
+    <div class="rank-badge" id="rankBadge">ふつうの人</div>
+    <div class="hashtag">#ノンデリ診断</div>
+  </div>
+</div>
+
+<script>
+  const RANKS = [
+    { max: 20,  name: 'デリカシーの神', emoji: '😇', bg: '#7FDBB6', tc: '#1a1a1a' },
+    { max: 40,  name: '気配り上手',     emoji: '😊', bg: '#B4E5A2', tc: '#1a1a1a' },
+    { max: 60,  name: 'ふつうの人',     emoji: '😅', bg: '#FFD93D', tc: '#1a1a1a' },
+    { max: 80,  name: 'ノンデリ寄り',   emoji: '💥', bg: '#FFA552', tc: '#1a1a1a' },
+    { max: 100, name: 'ノンデリ無双',   emoji: '🔥', bg: '#FF6B6B', tc: '#FFFFFF' }
+  ];
+
+  const params = new URLSearchParams(location.search);
+  // ?raw=1 にすると操作UIが消えて、上端ぴったり位置に表示 (Puppeteerでの撮影用)
+  if (params.get('raw') === '1') {
+    document.body.classList.add('raw');
+  }
+
+  function getRank(score) {
+    return RANKS.find(r => score <= r.max) || RANKS[2];
+  }
+
+  function update(score) {
+    score = Math.max(0, Math.min(100, parseInt(score, 10) || 0));
+    const rank = getRank(score);
+    document.getElementById('score').textContent = score;
+    document.getElementById('emoji').textContent = rank.emoji;
+    const badge = document.getElementById('rankBadge');
+    badge.textContent = rank.name;
+    badge.style.background = rank.bg;
+    badge.style.color = rank.tc;
+
+    document.getElementById('scoreRange').value = score;
+    document.getElementById('scoreInput').value = score;
+
+    // URLも書き換え (リロード対応)
+    const u = new URL(location.href);
+    u.searchParams.set('score', score);
+    history.replaceState(null, '', u.toString());
+  }
+
+  // 初期化
+  update(params.get('score') || 50);
+
+  // UIイベント
+  document.getElementById('scoreRange').addEventListener('input', e => update(e.target.value));
+  document.getElementById('scoreInput').addEventListener('input', e => update(e.target.value));
+  document.querySelectorAll('.preset').forEach(btn => {
+    btn.addEventListener('click', () => update(btn.dataset.score));
+  });
+</script>
+
+</body>
+</html>

@@ -1,0 +1,29 @@
+[build]
+  publish = "."
+
+# HTML / JS は毎回再検証
+[[headers]]
+  for = "/*.html"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+# 静的OGP画像は長期キャッシュ
+[[headers]]
+  for = "/ogp/*.png"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# questions.json は CORS 許可 + 1時間キャッシュ
+[[headers]]
+  for = "/questions.json"
+  [headers.values]
+    Cache-Control             = "public, max-age=3600"
+    Access-Control-Allow-Origin = "*"
+
+# セキュリティヘッダー（全ページ）
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options        = "SAMEORIGIN"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy        = "strict-origin-when-cross-origin"

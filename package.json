@@ -1,0 +1,13 @@
+{
+  "name": "nondeli-game",
+  "version": "1.0.0",
+  "description": "ノンデリ診断ゲーム — デリカシーの無さ度を診断するWebゲーム",
+  "private": true,
+  "scripts": {
+    "generate-ogp": "node scripts/generate-ogp.js",
+    "preview": "npx serve . -l 3000 --no-clipboard"
+  },
+  "devDependencies": {
+    "puppeteer": "^22.0.0"
+  }
+}

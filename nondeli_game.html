@@ -1,0 +1,1255 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>ノンデリ診断ゲーム</title>
+<meta name="description" content="あなたのノンデリ(デリカシーの無さ)度を10問で診断!">
+
+<!-- OGP / Twitter Card (JavaScript で結果表示時に動的更新) -->
+<meta property="og:title"       content="ノンデリ診断ゲーム">
+<meta property="og:description" content="あなたのノンデリ(デリカシーの無さ)度を10問で診断!">
+<meta property="og:type"        content="website">
+<meta property="og:image"       content="">
+<meta property="og:url"         content="">
+<meta name="twitter:card"        content="summary_large_image">
+<meta name="twitter:title"       content="ノンデリ診断ゲーム">
+<meta name="twitter:description" content="あなたのノンデリ(デリカシーの無さ)度を10問で診断!">
+<meta name="twitter:image"       content="">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Reggae+One&family=M+PLUS+Rounded+1c:wght@500;700;900&display=swap" rel="stylesheet">
+
+<!-- html2canvas: 結果カード画像ダウンロード用 -->
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+
+<style>
+  :root {
+    --bg: #FFF4E0;
+    --bg-deep: #FFE8C2;
+    --ink: #1a1a1a;
+    --pink: #FF3D7F;
+    --pink-deep: #E62E6B;
+    --yellow: #FFD93D;
+    --blue: #6BCBFF;
+    --green: #7FDBB6;
+    --red: #FF6B6B;
+    --orange: #FFA552;
+    --shadow: 6px 6px 0 var(--ink);
+    --shadow-sm: 4px 4px 0 var(--ink);
+    --shadow-xs: 3px 3px 0 var(--ink);
+    --border: 3px solid var(--ink);
+    --border-thick: 4px solid var(--ink);
+    --font-display: 'Reggae One', cursive;
+    --font-body: 'M PLUS Rounded 1c', sans-serif;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html, body {
+    font-family: var(--font-body);
+    background: var(--bg);
+    background-image:
+      radial-gradient(circle at 15% 15%, var(--bg-deep) 0%, transparent 28%),
+      radial-gradient(circle at 85% 80%, var(--bg-deep) 0%, transparent 32%),
+      radial-gradient(circle at 50% 50%, transparent 60%, rgba(255,200,100,0.08) 100%);
+    color: var(--ink);
+    min-height: 100vh;
+    font-weight: 700;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body { padding: 20px 16px 40px; }
+  .app { max-width: 480px; margin: 0 auto; position: relative; }
+
+  .brand {
+    text-align: center;
+    margin-bottom: 18px;
+    font-family: var(--font-display);
+    font-size: 14px;
+    letter-spacing: 0.15em;
+    opacity: 0.6;
+  }
+
+  .screen { display: none; }
+  .screen.active { display: block; animation: fadeIn 0.35s ease; }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ======== TITLE ======== */
+  .title-card {
+    background: white;
+    border: var(--border-thick);
+    border-radius: 24px;
+    padding: 36px 24px 32px;
+    text-align: center;
+    box-shadow: var(--shadow);
+    position: relative;
+  }
+
+  .title-card::before {
+    content: '!?';
+    position: absolute;
+    top: -22px; right: -16px;
+    background: var(--yellow);
+    border: var(--border);
+    border-radius: 50%;
+    width: 64px; height: 64px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-display);
+    font-size: 26px;
+    transform: rotate(15deg);
+    box-shadow: var(--shadow-xs);
+  }
+
+  .title-emoji {
+    font-size: 72px;
+    margin-bottom: 8px;
+    display: inline-block;
+    animation: wobble 2.4s ease-in-out infinite;
+  }
+
+  @keyframes wobble {
+    0%,100% { transform: rotate(-6deg) scale(1); }
+    50%      { transform: rotate(6deg) scale(1.05); }
+  }
+
+  .title-main {
+    font-family: var(--font-display);
+    font-size: 44px;
+    line-height: 1.05;
+    margin-bottom: 12px;
+    color: var(--pink);
+    text-shadow: 3px 3px 0 var(--ink);
+  }
+
+  .title-sub {
+    font-size: 15px;
+    margin-bottom: 28px;
+    line-height: 1.6;
+  }
+
+  .title-sub strong {
+    background: var(--yellow);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-weight: 900;
+  }
+
+  .meta {
+    font-size: 12px;
+    margin-top: 16px;
+    opacity: 0.65;
+    letter-spacing: 0.05em;
+  }
+
+  .past-result-wrap {
+    margin-top: 18px;
+    padding-top: 16px;
+    border-top: 2px dashed rgba(0,0,0,0.12);
+  }
+
+  .past-result-label {
+    font-size: 11px;
+    opacity: 0.55;
+    letter-spacing: 0.1em;
+    margin-bottom: 6px;
+  }
+
+  .past-result-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--bg);
+    border: var(--border);
+    border-radius: 999px;
+    padding: 6px 16px;
+    font-size: 13px;
+    font-weight: 900;
+    box-shadow: var(--shadow-xs);
+  }
+
+  .rule-link {
+    display: inline-block;
+    margin-top: 14px;
+    font-size: 12px;
+    opacity: 0.55;
+    cursor: pointer;
+    text-decoration: underline;
+    letter-spacing: 0.05em;
+    background: none;
+    border: none;
+    font-family: var(--font-body);
+    font-weight: 700;
+    color: var(--ink);
+  }
+  .rule-link:hover { opacity: 0.9; }
+
+  /* ======== RULES ======== */
+  .rules-card {
+    background: white;
+    border: var(--border-thick);
+    border-radius: 24px;
+    padding: 32px 24px 28px;
+    box-shadow: var(--shadow);
+  }
+
+  .rules-title {
+    font-family: var(--font-display);
+    font-size: 28px;
+    color: var(--pink);
+    text-shadow: 2px 2px 0 var(--ink);
+    margin-bottom: 20px;
+    text-align: center;
+  }
+
+  .rules-list {
+    list-style: none;
+    margin-bottom: 26px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .rules-list li {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    font-size: 14.5px;
+    line-height: 1.55;
+  }
+
+  .rule-num {
+    flex-shrink: 0;
+    background: var(--pink);
+    color: white;
+    border: 2px solid var(--ink);
+    border-radius: 50%;
+    width: 24px; height: 24px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-display);
+    font-size: 12px;
+    box-shadow: 2px 2px 0 var(--ink);
+  }
+
+  /* ======== BUTTONS ======== */
+  .btn {
+    background: var(--pink);
+    color: white;
+    border: var(--border-thick);
+    border-radius: 16px;
+    padding: 18px 32px;
+    font-size: 20px;
+    font-weight: 900;
+    font-family: var(--font-body);
+    cursor: pointer;
+    box-shadow: var(--shadow);
+    transition: transform 0.12s, box-shadow 0.12s;
+    width: 100%;
+    display: block;
+    letter-spacing: 0.05em;
+  }
+
+  .btn:hover  { transform: translate(-2px,-2px); box-shadow: 8px 8px 0 var(--ink); }
+  .btn:active { transform: translate(3px,3px);   box-shadow: 2px 2px 0 var(--ink); }
+  .btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; box-shadow: var(--shadow); }
+
+  .btn.secondary {
+    background: white;
+    color: var(--ink);
+    font-size: 16px;
+    padding: 14px 24px;
+  }
+
+  .btn.ghost {
+    background: transparent;
+    color: var(--ink);
+    font-size: 14px;
+    padding: 10px 20px;
+    box-shadow: var(--shadow-xs);
+    border: var(--border);
+    margin-top: 10px;
+  }
+
+  /* ======== QUESTION ======== */
+  .progress-wrap { margin-bottom: 18px; }
+
+  .progress-text {
+    text-align: center;
+    font-size: 14px;
+    margin-bottom: 8px;
+    font-weight: 900;
+    letter-spacing: 0.1em;
+  }
+
+  .progress-bar {
+    background: white;
+    border: var(--border);
+    border-radius: 999px;
+    height: 20px;
+    overflow: hidden;
+    box-shadow: var(--shadow-xs);
+  }
+
+  .progress-fill {
+    background: repeating-linear-gradient(
+      45deg,
+      var(--pink),
+      var(--pink) 10px,
+      var(--pink-deep) 10px,
+      var(--pink-deep) 20px
+    );
+    height: 100%;
+    border-radius: 999px 0 0 999px;
+    transition: width 0.4s cubic-bezier(0.5,0,0.5,1);
+    width: 0%;
+  }
+
+  .situation {
+    background: white;
+    border: var(--border-thick);
+    border-radius: 20px;
+    padding: 22px 20px;
+    margin-bottom: 18px;
+    font-size: 15.5px;
+    line-height: 1.75;
+    box-shadow: var(--shadow);
+    position: relative;
+  }
+
+  .situation-tag {
+    position: absolute;
+    top: -16px; left: 18px;
+    background: var(--yellow);
+    border: var(--border);
+    border-radius: 999px;
+    padding: 4px 14px;
+    font-size: 12px;
+    font-weight: 900;
+    box-shadow: var(--shadow-xs);
+    white-space: nowrap;
+    transition: background 0.2s;
+  }
+
+  .q-prompt {
+    font-size: 13px;
+    margin-bottom: 12px;
+    text-align: center;
+    opacity: 0.7;
+    letter-spacing: 0.1em;
+  }
+
+  .choices { display: flex; flex-direction: column; gap: 10px; }
+
+  .choice {
+    background: white;
+    border: var(--border-thick);
+    border-radius: 14px;
+    padding: 15px 18px 15px 48px;
+    font-size: 15px;
+    font-weight: 700;
+    font-family: var(--font-body);
+    cursor: pointer;
+    text-align: left;
+    box-shadow: var(--shadow-sm);
+    transition: transform 0.1s, box-shadow 0.1s, background 0.1s;
+    position: relative;
+    line-height: 1.5;
+    color: var(--ink);
+  }
+
+  .choice::before {
+    content: attr(data-letter);
+    position: absolute;
+    left: 12px; top: 50%;
+    transform: translateY(-50%);
+    background: var(--ink);
+    color: white;
+    width: 26px; height: 26px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-display);
+    font-size: 13px;
+  }
+
+  .choice:hover  { transform: translate(-2px,-2px); box-shadow: 6px 6px 0 var(--ink); }
+  .choice:active { transform: translate(2px,2px);   box-shadow: 2px 2px 0 var(--ink); }
+  .choice:nth-child(1):hover { background: #E8F8EC; }
+  .choice:nth-child(2):hover { background: #FFF6D6; }
+  .choice:nth-child(3):hover { background: #FFE4D2; }
+  .choice:nth-child(4):hover { background: #FFE0E0; }
+
+  /* ======== RESULT ======== */
+  .result-card {
+    background: white;
+    border: var(--border-thick);
+    border-radius: 24px;
+    padding: 28px 22px 24px;
+    text-align: center;
+    box-shadow: var(--shadow);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .result-card::before {
+    content: '';
+    position: absolute;
+    top: -40px; right: -40px;
+    width: 120px; height: 120px;
+    background: var(--yellow);
+    border-radius: 50%;
+    opacity: 0.35;
+    z-index: 0;
+  }
+
+  .result-card::after {
+    content: '';
+    position: absolute;
+    bottom: -50px; left: -50px;
+    width: 140px; height: 140px;
+    background: var(--pink);
+    border-radius: 50%;
+    opacity: 0.18;
+    z-index: 0;
+  }
+
+  .result-inner { position: relative; z-index: 1; }
+
+  .result-emoji {
+    font-size: 80px;
+    margin-bottom: 4px;
+    display: inline-block;
+    animation: pop 0.7s cubic-bezier(0.34,1.56,0.64,1);
+  }
+
+  @keyframes pop {
+    0%   { transform: scale(0) rotate(-180deg); opacity: 0; }
+    100% { transform: scale(1) rotate(0);       opacity: 1; }
+  }
+
+  .score-label { font-size: 13px; margin-bottom: 2px; letter-spacing: 0.18em; opacity: 0.7; }
+
+  .score-number {
+    font-family: var(--font-display);
+    font-size: 88px;
+    line-height: 0.9;
+    color: var(--pink);
+    text-shadow: 4px 4px 0 var(--ink);
+    display: inline-block;
+    animation: countUp 0.5s ease 0.4s both;
+  }
+
+  .score-unit { font-family: var(--font-display); font-size: 26px; margin-left: 4px; }
+
+  @keyframes countUp {
+    from { transform: translateY(20px); opacity: 0; }
+    to   { transform: translateY(0);    opacity: 1; }
+  }
+
+  .score-max { font-size: 12px; margin-bottom: 12px; opacity: 0.6; }
+
+  .score-meter-wrap { margin: 0 0 14px; }
+
+  .score-meter {
+    background: linear-gradient(to right, var(--green) 0%, var(--yellow) 40%, var(--orange) 70%, var(--red) 100%);
+    border: var(--border);
+    border-radius: 999px;
+    height: 20px;
+    position: relative;
+    box-shadow: var(--shadow-xs);
+  }
+
+  .score-meter-thumb {
+    position: absolute;
+    top: -7px;
+    width: 6px; height: 34px;
+    background: var(--ink);
+    border-radius: 3px;
+    transform: translateX(-50%);
+    transition: left 1s cubic-bezier(0.34,1.56,0.64,1) 0.5s;
+    left: 0%;
+  }
+
+  .score-meter-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 10px;
+    margin-top: 3px;
+    opacity: 0.55;
+  }
+
+  .rank-badge {
+    border: var(--border-thick);
+    border-radius: 14px;
+    padding: 10px 20px;
+    display: inline-block;
+    font-size: 20px;
+    font-weight: 900;
+    box-shadow: var(--shadow-sm);
+    margin-bottom: 10px;
+    font-family: var(--font-display);
+    letter-spacing: 0.05em;
+  }
+
+  .rank-desc { font-size: 13.5px; line-height: 1.7; margin-bottom: 6px; padding: 0 2px; }
+
+  /* ======== SHARE ======== */
+  .share-section {
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 2px dashed rgba(0,0,0,0.15);
+  }
+
+  .share-title { font-size: 13px; margin-bottom: 10px; font-weight: 900; letter-spacing: 0.1em; }
+
+  .share-buttons {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    margin-bottom: 14px;
+    flex-wrap: wrap;
+  }
+
+  .share-btn {
+    border: var(--border);
+    border-radius: 14px;
+    width: 54px; height: 54px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    box-shadow: var(--shadow-sm);
+    font-size: 20px;
+    font-weight: 900;
+    transition: transform 0.1s, box-shadow 0.1s;
+    background: white;
+    font-family: var(--font-body);
+  }
+
+  .share-btn:hover  { transform: translate(-2px,-2px); box-shadow: 6px 6px 0 var(--ink); }
+  .share-btn:active { transform: translate(2px,2px);   box-shadow: 2px 2px 0 var(--ink); }
+  .share-btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; box-shadow: var(--shadow-sm); }
+
+  .share-btn.x    { background: var(--ink); color: white; font-family: var(--font-display); font-size: 18px; }
+  .share-btn.line { background: #06C755; color: white; font-size: 11px; }
+  .share-btn.copy { background: var(--blue); color: var(--ink); }
+  .share-btn.save { background: var(--green); color: var(--ink); }
+
+  .result-actions { display: flex; flex-direction: column; gap: 8px; margin-top: 4px; }
+
+  /* ======== TOAST ======== */
+  .toast {
+    position: fixed;
+    bottom: 30px; left: 50%;
+    transform: translateX(-50%) translateY(120px);
+    background: var(--ink);
+    color: white;
+    padding: 12px 24px;
+    border-radius: 999px;
+    font-weight: 900;
+    font-size: 14px;
+    z-index: 1000;
+    opacity: 0;
+    transition: opacity 0.3s, transform 0.3s;
+    box-shadow: var(--shadow-sm);
+    border: var(--border);
+    pointer-events: none;
+  }
+
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* ======== RESPONSIVE ======== */
+  @media (max-width: 400px) {
+    body { padding: 16px 12px 32px; }
+    .title-main { font-size: 38px; }
+    .title-card { padding: 32px 20px 28px; }
+    .title-card::before { width: 56px; height: 56px; font-size: 22px; }
+    .situation { padding: 20px 16px; font-size: 15px; }
+    .choice { padding: 14px 16px 14px 44px; font-size: 14.5px; }
+    .score-number { font-size: 76px; }
+    .result-card { padding: 24px 16px 20px; }
+    .result-emoji { font-size: 68px; }
+  }
+
+  .footer-note { text-align: center; margin-top: 24px; font-size: 11px; opacity: 0.5; letter-spacing: 0.1em; }
+
+  /* ======== HISTORY ======== */
+  .history-card {
+    background: white;
+    border: var(--border-thick);
+    border-radius: 24px;
+    padding: 28px 20px 24px;
+    box-shadow: var(--shadow);
+  }
+
+  .history-title {
+    font-family: var(--font-display);
+    font-size: 26px;
+    color: var(--pink);
+    text-shadow: 2px 2px 0 var(--ink);
+    margin-bottom: 20px;
+    text-align: center;
+  }
+
+  .history-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 20px;
+    max-height: 380px;
+    overflow-y: auto;
+  }
+
+  .history-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--bg);
+    border: var(--border);
+    border-radius: 12px;
+    padding: 10px 14px;
+    box-shadow: var(--shadow-xs);
+  }
+
+  .history-rank-num {
+    flex-shrink: 0;
+    background: var(--ink);
+    color: white;
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px;
+    font-family: var(--font-display);
+  }
+
+  .history-score {
+    font-family: var(--font-display);
+    font-size: 20px;
+    color: var(--pink);
+    text-shadow: 1px 1px 0 var(--ink);
+    min-width: 54px;
+  }
+
+  .history-rank-name { flex: 1; font-size: 13px; font-weight: 900; }
+
+  .history-date { font-size: 11px; opacity: 0.55; flex-shrink: 0; }
+
+  .no-history {
+    text-align: center;
+    opacity: 0.5;
+    font-size: 14px;
+    padding: 30px 0;
+    line-height: 1.9;
+  }
+
+  .history-actions { display: flex; flex-direction: column; gap: 8px; }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <div class="brand">- NONDELI DIAGNOSIS -</div>
+
+  <!-- ============ TITLE ============ -->
+  <section class="screen active" id="title-screen">
+    <div class="title-card">
+      <div class="title-emoji">😬</div>
+      <h1 class="title-main">ノンデリ<br>診断ゲーム</h1>
+      <p class="title-sub">
+        あなたの <strong>ノンデリ度</strong> はどれくらい?<br>
+        10問のシチュエーションで診断します
+      </p>
+      <button class="btn" id="start-btn" onclick="startGame()" disabled>読み込み中...</button>
+      <div class="meta">全10問 / 約3分 / 問題はランダム</div>
+
+      <div class="past-result-wrap" id="past-result-wrap" style="display:none">
+        <div class="past-result-label">- 前回の結果 -</div>
+        <div class="past-result-badge" id="past-result-badge"></div>
+      </div>
+
+      <button class="rule-link" onclick="showRules()">ルール説明を見る</button>
+      <button class="rule-link" onclick="showHistory()">📊 プレイ履歴を見る</button>
+    </div>
+  </section>
+
+  <!-- ============ HISTORY ============ -->
+  <section class="screen" id="history-screen">
+    <div class="history-card">
+      <h2 class="history-title">📊 プレイ履歴</h2>
+      <div class="history-list" id="history-list"></div>
+      <div class="history-actions">
+        <button class="btn secondary" onclick="showScreen('title-screen')">← タイトルへ戻る</button>
+        <button class="btn ghost" id="clear-history-btn" onclick="clearHistory()" style="display:none">🗑️ 記録をリセット</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ RULES ============ -->
+  <section class="screen" id="rules-screen">
+    <div class="rules-card">
+      <div class="rules-title">📖 ルール説明</div>
+      <ul class="rules-list">
+        <li>
+          <span class="rule-num">1</span>
+          <span>40問のプールから <strong>10問</strong> がランダムで出題されます</span>
+        </li>
+        <li>
+          <span class="rule-num">2</span>
+          <span>各シチュエーションで「<strong>あなたなら実際どうする?</strong>」という選択肢を選んでください</span>
+        </li>
+        <li>
+          <span class="rule-num">3</span>
+          <span>正解・不正解はありません。直感で選ぼう！</span>
+        </li>
+        <li>
+          <span class="rule-num">4</span>
+          <span>全問終わると <strong>ノンデリ度</strong> が診断されます</span>
+        </li>
+        <li>
+          <span class="rule-num">5</span>
+          <span>戻るボタンはありません。テンポよく進もう 💨</span>
+        </li>
+      </ul>
+      <button class="btn" onclick="beginGame()">ゲームスタート！</button>
+      <button class="btn ghost" onclick="showScreen('title-screen')">← タイトルへ戻る</button>
+    </div>
+  </section>
+
+  <!-- ============ QUESTION ============ -->
+  <section class="screen" id="question-screen">
+    <div class="progress-wrap">
+      <div class="progress-text" id="progress-text">Q1 / 10</div>
+      <div class="progress-bar">
+        <div class="progress-fill" id="progress-fill"></div>
+      </div>
+    </div>
+
+    <div class="situation">
+      <span class="situation-tag" id="situation-tag">👥 友人関係</span>
+      <p id="situation-text"></p>
+    </div>
+
+    <p class="q-prompt">- あなたはどう反応する? -</p>
+    <div class="choices" id="choices"></div>
+  </section>
+
+  <!-- ============ RESULT ============ -->
+  <section class="screen" id="result-screen">
+    <div class="result-card" id="result-card">
+      <div class="result-inner">
+        <div class="result-emoji" id="result-emoji">😅</div>
+        <div class="score-label">あなたのノンデリ度</div>
+        <div>
+          <span class="score-number" id="score-number">0</span><span class="score-unit">点</span>
+        </div>
+        <div class="score-max">/ 100点満点</div>
+
+        <div class="score-meter-wrap">
+          <div class="score-meter">
+            <div class="score-meter-thumb" id="score-meter-thumb"></div>
+          </div>
+          <div class="score-meter-labels">
+            <span>デリカシーの神</span>
+            <span>ノンデリ無双🔥</span>
+          </div>
+        </div>
+
+        <div class="rank-badge" id="rank-name">- - -</div>
+        <p class="rank-desc" id="rank-desc"></p>
+
+        <div class="share-section">
+          <div class="share-title">- 結果をシェアしよう -</div>
+          <div class="share-buttons">
+            <button class="share-btn x"    onclick="shareX()"              aria-label="Xで共有">𝕏</button>
+            <button class="share-btn line" onclick="shareLine()"           aria-label="LINEで共有">LINE</button>
+            <button class="share-btn copy" onclick="copyURL()"             aria-label="URLをコピー">📋</button>
+            <button class="share-btn save" id="save-btn" onclick="downloadResultImage()" aria-label="画像を保存">💾</button>
+          </div>
+          <div class="result-actions">
+            <button class="btn secondary" onclick="beginGame()">もう一度プレイ 🔄</button>
+            <button class="btn ghost"     onclick="goHome()">トップへ戻る 🏠</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="footer-note">© ノンデリ診断ゲーム</div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ============================================================
+// CONFIG
+// 本番デプロイ時は OGP_API_BASE を実際のエンドポイントに変更してください
+// Vercel/Next.js: '/api/og'
+// 静的事前生成 (Puppeteer): '/ogp/score-{n}.png'
+// ============================================================
+const OGP_API_BASE  = '/api/og';
+const QUESTIONS_URL = './questions.json';
+
+// カテゴリIDに対応する絵文字
+const CATEGORY_EMOJIS = {
+  friend:    '👥',
+  work:      '💼',
+  sns:       '📱',
+  food:      '🍽️',
+  body:      '💪',
+  family:    '🏠',
+  lifestyle: '🌿'
+};
+
+// ============================================================
+// FALLBACK DATA — questions.json が取得できない場合に使用
+// ============================================================
+const FALLBACK_DATA = {
+  version: '1.0',
+  config: { questionsPerPlay: 10, maxScorePerChoice: 10, shuffleQuestions: true, shuffleChoices: true },
+  categories: [
+    { id: 'friend',    name: '友人関係',       color: '#FF3D7F' },
+    { id: 'work',      name: '職場',           color: '#6BCBFF' },
+    { id: 'sns',       name: 'SNS',            color: '#7FDBB6' },
+    { id: 'food',      name: '食事・飲み会',   color: '#FFD93D' },
+    { id: 'body',      name: '外見・体型',     color: '#FFA552' },
+    { id: 'family',    name: '家族・親戚',     color: '#A78BFA' },
+    { id: 'lifestyle', name: 'ライフスタイル', color: '#FF6B6B' }
+  ],
+  ranks: [
+    { max: 20,  name: 'デリカシーの神', emoji: '😇', bgColor: '#7FDBB6', textColor: '#1a1a1a', desc: '周りから愛される稀有な存在。あなたの一言で救われている人が、きっといるはず。' },
+    { max: 40,  name: '気配り上手',     emoji: '😊', bgColor: '#B4E5A2', textColor: '#1a1a1a', desc: '安心感のあるタイプ。基本的に空気を読めるので、誰からも好かれます。' },
+    { max: 60,  name: 'ふつうの人',     emoji: '😅', bgColor: '#FFD93D', textColor: '#1a1a1a', desc: 'たまにやらかすけど、自覚があるから大丈夫。あと一歩で「気配り上手」!' },
+    { max: 80,  name: 'ノンデリ寄り',   emoji: '💥', bgColor: '#FFA552', textColor: '#1a1a1a', desc: 'ちょっと気をつけて。悪気はなくても、相手は地味に傷ついているかもしれません。' },
+    { max: 100, name: 'ノンデリ無双',   emoji: '🔥', bgColor: '#FF6B6B', textColor: '#FFFFFF', desc: '友達が静かに離れていく前に、一度発言を見直してみましょう...!' }
+  ],
+  questions: [
+    { id:'q001', category:'friend', situation:'久しぶりに会った友人。明らかに新しい髪型にしている。あなたは何と声をかける?', choices:[{text:'「その髪型めっちゃ似合ってる!」',score:0},{text:'「髪型変えたんだね」',score:2},{text:'「前の方が良かったかも...」',score:7},{text:'「なんでそんな髪型にしたの?」',score:10}] },
+    { id:'q002', category:'work',   situation:'同期が先に昇進した。あなたはまだ。飲み会で本人と二人きりになった。', choices:[{text:'「おめでとう! 素直にすごいと思う」',score:0},{text:'「これからもよろしくね」',score:2},{text:'「上司のお気に入りだもんね〜」',score:8},{text:'「俺ももうすぐ追いつくから安心して」',score:9}] },
+    { id:'q003', category:'food',   situation:'友人の家で手料理をごちそうになった。正直、味がイマイチ。食後に感想を求められた。', choices:[{text:'「ごちそうさま、ありがとう!」',score:0},{text:'「美味しかった、また食べたいな」',score:1},{text:'「もう少し塩入れた方がいいかも」',score:6},{text:'「お店だったら金返せってレベル」',score:10}] },
+    { id:'q004', category:'friend', situation:'友人から「最近付き合い始めた人」の写真を見せられた。正直、好みではない見た目。', choices:[{text:'「いい人そうじゃん!」',score:0},{text:'「優しそうな雰囲気の人だね」',score:1},{text:'「へぇ〜...意外だね」',score:5},{text:'「えっ、もっといい人いそうじゃない?」',score:10}] },
+    { id:'q005', category:'work',   situation:'後輩が大きなミスをして落ち込んでいる。あなたが声をかけるとしたら?', choices:[{text:'「次から気をつけよう。対策一緒に考えよう」',score:0},{text:'「みんな失敗するから大丈夫」',score:1},{text:'「俺がいたら防げたのにな〜」',score:7},{text:'「これだから最近の若いやつは...」',score:10}] },
+    { id:'q006', category:'body',   situation:'妊娠中の友人と久しぶりに会った。お腹がだいぶ大きくなっている。', choices:[{text:'「体調どう? 無理しないでね」',score:0},{text:'「もうすぐだね! 楽しみ」',score:0},{text:'「お腹大きいね〜双子じゃないの?」',score:8},{text:'「太った?って思ったら妊娠か〜」',score:10}] },
+    { id:'q007', category:'sns',    situation:'SNSで友人がやたら自慢っぽい投稿(高級ディナー、ブランド品)を連発している。', choices:[{text:'特に何もしない',score:0},{text:'「いいね」だけ押しておく',score:1},{text:'本人に「最近羽振りいいね?」と聞く',score:5},{text:'共通の友達に「あれってどう思う?」と聞く',score:9}] },
+    { id:'q008', category:'friend', situation:'友人が結婚した。あなたは式に呼ばれなかった。後日その友人と会う機会があった。', choices:[{text:'「結婚おめでとう!」と笑顔で祝福',score:0},{text:'結婚の話には特に触れない',score:2},{text:'「俺の時は呼ばないからね」と冗談ぽく',score:7},{text:'「なんで呼んでくれなかったの?」と聞く',score:9}] },
+    { id:'q009', category:'friend', situation:'友達がふられて落ち込んでいる。あなたから声をかけるなら?', choices:[{text:'「話聞こうか?」と寄り添う',score:0},{text:'「気分転換しよう」と誘い出す',score:1},{text:'「もっといい人いるよ!」と励ます',score:4},{text:'「だからやめとけって言ったじゃん」',score:10}] },
+    { id:'q010', category:'body',   situation:'数年ぶりの同窓会で再会した友人。明らかに体型が大きく変わっている。', choices:[{text:'「元気そうで何より!」',score:0},{text:'「久しぶり! 変わらないね」',score:2},{text:'「あれ? ちょっと太った?」',score:8},{text:'「誰かと思ったよ〜」',score:10}] },
+    { id:'q011', category:'friend', situation:'友達の新居に招かれた。インテリアの趣味が全く合わない。', choices:[{text:'「広くていいね!」',score:0},{text:'「個性的で素敵」',score:2},{text:'「こういう趣味なんだ...」',score:5},{text:'「これ自分で選んだの? マジで?」',score:10}] },
+    { id:'q012', category:'friend', situation:'友達が「うちの子可愛いでしょ?」とペットの写真を見せてきた。正直、ピンとこない。', choices:[{text:'「可愛い〜!」と素直に褒める',score:0},{text:'「ペット飼ってたんだね」',score:1},{text:'「うーん、普通じゃない?」',score:7},{text:'「うちの子の方が可愛いよ」と自分の写真を見せ始める',score:8}] },
+    { id:'q013', category:'friend', situation:'友達が手作りのアクセサリーをくれた。正直、自分の好みではない。', choices:[{text:'「ありがとう! 大事にする」',score:0},{text:'「すごい、手作りなんだ!」',score:1},{text:'「うーん、これは使わないかな」',score:8},{text:'「これ私につけろってこと?」',score:10}] },
+    { id:'q014', category:'friend', situation:'友達とカラオケに行った。友達の歌が壊滅的に音痴。', choices:[{text:'「楽しかったね!」と盛り上げる',score:0},{text:'普通に拍手する',score:1},{text:'「個性的な歌い方だね」',score:5},{text:'「もう一曲お願い、笑いたいから」',score:9}] },
+    { id:'q015', category:'work',   situation:'会議の最中、上司が渾身のダジャレを放った。シーン...となる空気。', choices:[{text:'軽く笑って場を和ませる',score:0},{text:'とりあえずニコッとする',score:2},{text:'真顔で「面白いですね」と棒読み',score:6},{text:'「もう一回お願いします、聞こえなくて」',score:8}] },
+    { id:'q016', category:'work',   situation:'隣の席の同僚が毎日同じようなお弁当を食べている。今日も同じメニュー。', choices:[{text:'何も気にしない',score:0},{text:'「美味しそう」と一言',score:0},{text:'「また同じやつ?」とからかう',score:7},{text:'「飽きないの? それ毎日じゃん」',score:9}] },
+    { id:'q017', category:'work',   situation:'会議で同僚が完全に的外れな発言をした。空気が微妙。', choices:[{text:'自然に話題を戻す',score:0},{text:'「なるほど、別の視点ですね」とフォロー',score:1},{text:'後で本人に「あれはちょっと...」と教える',score:3},{text:'その場で「いや、論点ズレてません?」と指摘',score:8}] },
+    { id:'q018', category:'work',   situation:'同僚が退職することに。送別会で本人と話す機会があった。', choices:[{text:'「お疲れさま、新天地でも頑張って!」',score:0},{text:'「寂しくなるね」と一言',score:0},{text:'「実は前から辞めそうだと思ってた」',score:7},{text:'「次どこ行くの? 給料いくら?」',score:8}] },
+    { id:'q019', category:'work',   situation:'部下が有給を取りたいと申し出てきた。繁忙期ではないが急な相談。', choices:[{text:'「もちろん、しっかり休んで」',score:0},{text:'「事前に教えてくれて助かる」',score:1},{text:'「みんなも我慢してるんだけど...」',score:8},{text:'「何の用事? 教えてくれないと判断できない」',score:9}] },
+    { id:'q020', category:'work',   situation:'入社3ヶ月の新人。同じ部署なのに、つい名前を間違えてしまった。本人もそれに気づいている。', choices:[{text:'「ごめん、間違えた!」と素直に謝る',score:0},{text:'すぐ名前を呼び直して訂正',score:1},{text:'「ま、似た顔多いから」と流す',score:8},{text:'「気にしないで、覚えるの苦手なんだ」',score:9}] },
+    { id:'q021', category:'sns',    situation:'友達のSNSの写真、明らかに加工が強い。実物とだいぶ違う。', choices:[{text:'何も言わない',score:0},{text:'「いい写真だね」とコメント',score:1},{text:'「これ加工してる?」と直接聞く',score:6},{text:'「実物と別人じゃん(笑)」とコメント',score:10}] },
+    { id:'q022', category:'sns',    situation:'飲み会の日程調整のグループLINE。一人だけ既読つけて返事してない人がいる。', choices:[{text:'個別に「来れる?」と聞く',score:0},{text:'気にせず話を進める',score:1},{text:'「○○さん返事まだ?」とグループに投稿',score:5},{text:'「○○既読スルーやめて」とグループに投稿',score:9}] },
+    { id:'q023', category:'sns',    situation:'友達が、自分が酔っ払って崩れている写真をSNSに勝手にアップしていた。', choices:[{text:'「タグ外すね」と落ち着いて伝える',score:0},{text:'本人に直接「あれ消して」と頼む',score:1},{text:'公開コメントで「消して」と書く',score:4},{text:'仕返しに友達の変な写真をアップする',score:10}] },
+    { id:'q024', category:'sns',    situation:'久しぶりに会った友達が、フォロワー数の話ばかりしてくる。', choices:[{text:'「すごいね!」と素直に聞く',score:0},{text:'適当に相槌を打つ',score:1},{text:'「フォロワー数って実生活に関係ある?」',score:7},{text:'「で、それで収入入るの?」',score:8}] },
+    { id:'q025', category:'food',   situation:'飲み会で先輩がベロベロに酔って絡んでくる。同期も困っている。', choices:[{text:'そっと水を渡してフォローする',score:0},{text:'話を聞いてあげる',score:1},{text:'「先輩、みっともないですよ」と直接言う',score:7},{text:'写真を撮って後でネタにする',score:8}] },
+    { id:'q026', category:'food',   situation:'ランチで同僚が「これにしようかな」と言ったメニュー、正直地味で美味しくなさそう。', choices:[{text:'「いいね」と一言',score:0},{text:'「いいね、私もそれにする」',score:1},{text:'「えー、もっと美味しいのあるよ」と別を勧める',score:5},{text:'「センスないね、なんでそれ?」',score:10}] },
+    { id:'q027', category:'food',   situation:'一緒に食事した人の食べ方が、ちょっと独特(音を立てる・順番がバラバラ等)。', choices:[{text:'特に気にしない',score:0},{text:'自分のペースで食べる',score:0},{text:'「もう少し静かに食べようよ」とやんわり指摘',score:4},{text:'「その食べ方やめてくれない?」',score:9}] },
+    { id:'q028', category:'body',   situation:'久々に会った友達。明らかに髪の毛の量が変わっている気がする。', choices:[{text:'触れずに普通に話す',score:0},{text:'「元気そうだね」と話題を変える',score:0},{text:'「最近どうしたの?」とジロジロ見る',score:7},{text:'「ねぇ、髪薄くなった?」と聞く',score:10}] },
+    { id:'q029', category:'body',   situation:'友達がコンタクトからメガネに変えていた。正直、似合っているとは言えない。', choices:[{text:'「メガネ似合うね!」',score:0},{text:'「メガネ変えたんだ」',score:1},{text:'「どっちが本当のあなた?」とイジる',score:5},{text:'「コンタクトの方が良かったね」',score:9}] },
+    { id:'q030', category:'family', situation:'友達が「お正月に親戚から結婚はまだか?って何回も聞かれてさ...」と愚痴ってきた。', choices:[{text:'「それは疲れるよね〜」と共感',score:0},{text:'「親戚あるあるだよね」と寄り添う',score:1},{text:'「で、結婚の予定はあるの?」と聞いてしまう',score:7},{text:'「正論じゃない? 早くした方がいいよ」',score:10}] },
+    { id:'q031', category:'family', situation:'友達が「うちの父さん、最近頑固で困る」と家族の話をしてきた。', choices:[{text:'「分かる、うちもそうだよ」と共感',score:0},{text:'真剣に話を聞く',score:0},{text:'「親と仲良くしなきゃダメだよ」と説教',score:7},{text:'「うちは全員仲いいよ〜」とマウントする',score:8}] },
+    { id:'q032', category:'family', situation:'友達が「弟が大企業に就職して、親に比べられてつらい」と話してきた。', choices:[{text:'「弟と君は別人だよ」と励ます',score:0},{text:'「親はそういうもんだよね」と共感',score:1},{text:'「君も頑張ればいいじゃん」',score:6},{text:'「弟さん、すごいんだね!」と弟を褒める',score:10}] },
+    { id:'q033', category:'lifestyle', situation:'友達が最近、節約を頑張っている話をしている。', choices:[{text:'「すごい、感心する!」',score:0},{text:'「私も見習わなきゃ」',score:1},{text:'「そこまでしなくてもよくない?」',score:7},{text:'「ケチくさいね〜」',score:10}] },
+    { id:'q034', category:'lifestyle', situation:'友達が頑張って買った高級ブランドのバッグ。正直、自分にはピンとこない。', choices:[{text:'「お似合い! 素敵だね」',score:0},{text:'「ずっと欲しかったやつ?」',score:1},{text:'「私はブランドあんまり興味ないかな」',score:5},{text:'「それいくら? もったいなくない?」',score:10}] },
+    { id:'q035', category:'lifestyle', situation:'友達が「都心から郊外に引っ越した」と報告。あなたから見ると不便そう。', choices:[{text:'「のんびりできていいね!」',score:0},{text:'「いい選択だね」',score:1},{text:'「えー、不便じゃない?」',score:5},{text:'「なんでそんな場所選んだの?」',score:9}] },
+    { id:'q036', category:'work',   situation:'飲み会で、上司が若い頃の武勇伝を延々と語り始めた。話は今で30分目。', choices:[{text:'適度に相槌を打つ',score:0},{text:'笑顔で聞き続ける',score:1},{text:'スマホを見ながら聞く',score:7},{text:'「その話、3回目ですよ」と指摘',score:8}] },
+    { id:'q037', category:'sns',    situation:'友達がSNSで「振られた...」と意味深な投稿をしている。', choices:[{text:'DMで個別に「大丈夫?」と聞く',score:0},{text:'そっとしておく',score:1},{text:'「いいね」だけ押す',score:4},{text:'投稿に「誰に?」とコメント',score:9}] },
+    { id:'q038', category:'work',   situation:'同僚が今日明らかに気合いの入った服で出勤。でも職場では少し浮いている。', choices:[{text:'「素敵な服!」と褒める',score:0},{text:'「おしゃれだね」と一言',score:1},{text:'「今日デート?」とニヤニヤ聞く',score:5},{text:'「TPO考えた方がいいよ」と忠告',score:10}] },
+    { id:'q039', category:'friend', situation:'友達が「最近〇〇始めたんだ」と新しい趣味の話をしてきた。あなたから見ると微妙な趣味。', choices:[{text:'「いいね、楽しそう!」',score:0},{text:'「どんな感じ? 教えて」',score:0},{text:'「ふーん...続くといいね」',score:5},{text:'「それ何が楽しいの?」',score:9}] },
+    { id:'q040', category:'friend', situation:'友達の車に乗せてもらった。明らかに運転が荒く、何度もヒヤッとする。', choices:[{text:'黙って心の中で祈る',score:0},{text:'「気をつけてね」とやんわり',score:1},{text:'「もうちょっとゆっくりで...」',score:2},{text:'「免許どこで取った?」',score:10}] }
+  ]
+};
+
+// ============================================================
+// RUNTIME — loadGameData() が設定する
+// ============================================================
+let CATEGORY_INFO  = {};
+let QUESTIONS_POOL = [];
+let RANKS_DATA     = [];
+let QUESTIONS_PER_GAME = 10;
+
+// ============================================================
+// STATE
+// ============================================================
+let state = { questions: [], currentQ: 0, totalScore: 0, finalScore: 0, rankIndex: 0 };
+
+// ============================================================
+// DATA LOADING
+// ============================================================
+function applyGameData(data) {
+  QUESTIONS_POOL     = data.questions;
+  RANKS_DATA         = data.ranks;
+  QUESTIONS_PER_GAME = data.config.questionsPerPlay;
+  CATEGORY_INFO      = {};
+  data.categories.forEach(cat => {
+    CATEGORY_INFO[cat.id] = {
+      label: (CATEGORY_EMOJIS[cat.id] || '') + ' ' + cat.name,
+      color: cat.color
+    };
+  });
+}
+
+async function loadGameData() {
+  try {
+    const res = await fetch(QUESTIONS_URL);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    applyGameData(data);
+  } catch (e) {
+    console.warn('questions.json の読み込みに失敗。内蔵データを使用します:', e.message);
+    applyGameData(FALLBACK_DATA);
+  }
+}
+
+// ============================================================
+// UTIL
+// ============================================================
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ============================================================
+// LOCAL STORAGE
+// ============================================================
+const LS_KEY    = 'nondeli_history';
+const LS_PLAYED = 'nondeli_played';
+
+function saveResult(score, rankName) {
+  let history = [];
+  try { history = JSON.parse(localStorage.getItem(LS_KEY)) || []; } catch(e) {}
+  history.unshift({ score, rankName, date: new Date().toLocaleDateString('ja-JP') });
+  if (history.length > 10) history = history.slice(0, 10);
+  try { localStorage.setItem(LS_KEY, JSON.stringify(history)); } catch(e) {}
+}
+
+function loadLastResult() {
+  try {
+    const h = JSON.parse(localStorage.getItem(LS_KEY));
+    if (h && h.length > 0) return h[0];
+  } catch(e) {}
+  return null;
+}
+
+function updatePastResultUI() {
+  const last = loadLastResult();
+  const wrap  = document.getElementById('past-result-wrap');
+  const badge = document.getElementById('past-result-badge');
+  if (last) {
+    badge.textContent = `${last.score}点 / ${last.rankName}  (${last.date})`;
+    wrap.style.display = 'block';
+  } else {
+    wrap.style.display = 'none';
+  }
+}
+
+// ============================================================
+// OGP META TAG UPDATE
+// ============================================================
+function setMeta(prop, content, useProp = true) {
+  const attr = useProp ? 'property' : 'name';
+  let el = document.querySelector(`meta[${attr}="${prop}"]`);
+  if (!el) {
+    el = document.createElement('meta');
+    el.setAttribute(attr, prop);
+    document.head.appendChild(el);
+  }
+  el.content = content;
+}
+
+function updateOGPForScore(score) {
+  if (!RANKS_DATA.length) return;
+  const rankIndex = RANKS_DATA.findIndex(r => score <= r.max);
+  const rank = RANKS_DATA[rankIndex >= 0 ? rankIndex : RANKS_DATA.length - 1];
+  const title   = `ノンデリ度 ${score}点（${rank.name} ${rank.emoji}）- ノンデリ診断ゲーム`;
+  const desc    = `${rank.desc} あなたも診断してみよう！ #ノンデリ診断`;
+  const imgUrl  = `${location.origin}${OGP_API_BASE}?score=${score}`;
+  const pageUrl = getShareURL(score);
+
+  setMeta('og:title',          title);
+  setMeta('og:description',    desc);
+  setMeta('og:image',          imgUrl);
+  setMeta('og:url',            pageUrl);
+  setMeta('twitter:title',       title,  false);
+  setMeta('twitter:description', desc,   false);
+  setMeta('twitter:image',       imgUrl, false);
+  document.title = title;
+}
+
+// ============================================================
+// TITLE → RULES → GAME
+// ============================================================
+function startGame() {
+  const isFirstTime = !localStorage.getItem(LS_PLAYED);
+  if (isFirstTime) {
+    showScreen('rules-screen');
+  } else {
+    beginGame();
+  }
+}
+
+function showRules() {
+  showScreen('rules-screen');
+}
+
+function beginGame() {
+  try { localStorage.setItem(LS_PLAYED, '1'); } catch(e) {}
+  state.questions = shuffle(QUESTIONS_POOL)
+    .slice(0, QUESTIONS_PER_GAME)
+    .map(q => ({ ...q, choices: shuffle(q.choices) }));
+  state.currentQ   = 0;
+  state.totalScore = 0;
+  showScreen('question-screen');
+  renderQuestion();
+}
+
+// ============================================================
+// QUESTION
+// ============================================================
+function renderQuestion() {
+  const q     = state.questions[state.currentQ];
+  const total = state.questions.length;
+
+  document.getElementById('situation-text').textContent = q.situation;
+
+  const cat = CATEGORY_INFO[q.category] || { label: q.category, color: '#FFD93D' };
+  const tag = document.getElementById('situation-tag');
+  tag.textContent   = cat.label;
+  tag.style.background = cat.color;
+
+  const choicesEl = document.getElementById('choices');
+  choicesEl.innerHTML = '';
+  const letters = ['A', 'B', 'C', 'D'];
+  q.choices.forEach((c, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'choice';
+    btn.setAttribute('data-letter', letters[i]);
+    btn.textContent = c.text;
+    btn.onclick = () => selectAnswer(c.score);
+    choicesEl.appendChild(btn);
+  });
+
+  document.getElementById('progress-fill').style.width = (state.currentQ / total * 100) + '%';
+  document.getElementById('progress-text').textContent = `Q${state.currentQ + 1} / ${total}`;
+}
+
+function selectAnswer(score) {
+  document.querySelectorAll('.choice').forEach(btn => { btn.onclick = null; btn.style.pointerEvents = 'none'; });
+  state.totalScore += score;
+  state.currentQ++;
+
+  if (state.currentQ >= state.questions.length) {
+    document.getElementById('progress-fill').style.width = '100%';
+    setTimeout(showResult, 300);
+  } else {
+    setTimeout(renderQuestion, 150);
+  }
+}
+
+// ============================================================
+// RESULT
+// ============================================================
+function showResult() {
+  const maxScore   = state.questions.length * 10;
+  const finalScore = Math.round((state.totalScore / maxScore) * 100);
+  state.finalScore = finalScore;
+
+  const rankIndex = RANKS_DATA.findIndex(r => finalScore <= r.max);
+  const rank = RANKS_DATA[rankIndex >= 0 ? rankIndex : RANKS_DATA.length - 1];
+  state.rankIndex = rankIndex >= 0 ? rankIndex : RANKS_DATA.length - 1;
+
+  document.getElementById('result-emoji').textContent = rank.emoji;
+  document.getElementById('rank-desc').textContent    = rank.desc;
+
+  const badge = document.getElementById('rank-name');
+  badge.textContent        = rank.name;
+  badge.style.background   = rank.bgColor;
+  badge.style.color        = rank.textColor;
+
+  // Reset meter before showing screen
+  document.getElementById('score-meter-thumb').style.left = '0%';
+
+  showScreen('result-screen');
+
+  animateScore(0, finalScore, 900);
+  saveResult(finalScore, rank.name);
+  updatePastResultUI();
+  updateOGPForScore(finalScore);
+
+  setTimeout(() => {
+    document.getElementById('score-meter-thumb').style.left = finalScore + '%';
+  }, 200);
+}
+
+function animateScore(from, to, duration) {
+  const el    = document.getElementById('score-number');
+  const start = performance.now();
+  function step(now) {
+    const t     = Math.min((now - start) / duration, 1);
+    const eased = 1 - Math.pow(1 - t, 3);
+    el.textContent = Math.round(from + (to - from) * eased);
+    if (t < 1) requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
+
+function goHome() { showScreen('title-screen'); }
+
+// ============================================================
+// HISTORY
+// ============================================================
+function showHistory() {
+  let history = [];
+  try { history = JSON.parse(localStorage.getItem(LS_KEY)) || []; } catch(e) {}
+
+  const list    = document.getElementById('history-list');
+  const clearBtn = document.getElementById('clear-history-btn');
+
+  if (history.length === 0) {
+    list.innerHTML = '<p class="no-history">まだプレイ記録がありません。<br>ゲームをプレイして<br>記録を作ろう！ 🎮</p>';
+    clearBtn.style.display = 'none';
+  } else {
+    clearBtn.style.display = 'block';
+    list.innerHTML = history.map((h, i) => `
+      <div class="history-item">
+        <span class="history-rank-num">${i + 1}</span>
+        <span class="history-score">${h.score}点</span>
+        <span class="history-rank-name">${h.rankName}</span>
+        <span class="history-date">${h.date}</span>
+      </div>
+    `).join('');
+  }
+  showScreen('history-screen');
+}
+
+function clearHistory() {
+  if (!confirm('プレイ記録をすべて削除しますか？')) return;
+  try { localStorage.removeItem(LS_KEY); } catch(e) {}
+  updatePastResultUI();
+  showHistory();
+  showToast('記録を削除しました 🗑️');
+}
+
+// ============================================================
+// SHARE
+// ============================================================
+function getShareURL(score) {
+  const u = new URL(location.href);
+  u.searchParams.set('score', score ?? state.finalScore);
+  return u.toString();
+}
+
+function getShareText() {
+  const rank = RANKS_DATA[state.rankIndex] || { name: '---', emoji: '' };
+  return `私のノンデリ度は ${state.finalScore}点（${rank.name} ${rank.emoji}）でした!\nあなたも診断してみよう👇\n#ノンデリ診断`;
+}
+
+function shareX() {
+  const text = encodeURIComponent(getShareText());
+  const url  = encodeURIComponent(getShareURL());
+  window.open(`https://twitter.com/intent/tweet?text=${text}&url=${url}`, '_blank', 'noopener');
+}
+
+function shareLine() {
+  const url = encodeURIComponent(getShareURL());
+  window.open(`https://social-plugins.line.me/lineit/share?url=${url}`, '_blank', 'noopener');
+}
+
+async function copyURL() {
+  const text = getShareText() + '\n' + getShareURL();
+  try {
+    await navigator.clipboard.writeText(text);
+    showToast('コピーしました! 📋');
+  } catch(e) {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.cssText = 'position:fixed;opacity:0';
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand('copy'); showToast('コピーしました! 📋'); }
+    catch { showToast('コピーに失敗しました'); }
+    document.body.removeChild(ta);
+  }
+}
+
+// ============================================================
+// IMAGE DOWNLOAD (html2canvas)
+// ============================================================
+async function downloadResultImage() {
+  const btn = document.getElementById('save-btn');
+  const prev = btn.textContent;
+  btn.textContent = '⏳';
+  btn.disabled = true;
+  try {
+    const card   = document.getElementById('result-card');
+    const canvas = await html2canvas(card, {
+      backgroundColor: '#FFFFFF',
+      scale: 2,
+      useCORS: true,
+      allowTaint: false,
+      logging: false
+    });
+    const link    = document.createElement('a');
+    link.download = `nondeli-${state.finalScore}点.png`;
+    link.href     = canvas.toDataURL('image/png');
+    link.click();
+    showToast('画像を保存しました! 💾');
+  } catch(e) {
+    showToast('保存に失敗しました');
+  } finally {
+    btn.textContent = prev;
+    btn.disabled = false;
+  }
+}
+
+// ============================================================
+// TOAST
+// ============================================================
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => t.classList.remove('show'), 1800);
+}
+
+// ============================================================
+// INIT
+// ============================================================
+(async function init() {
+  const startBtn = document.getElementById('start-btn');
+
+  await loadGameData();
+
+  startBtn.textContent = 'START 🚀';
+  startBtn.disabled    = false;
+
+  updatePastResultUI();
+
+  // ?score= パラメータがあれば OGP メタタグを更新
+  const scoreParam = new URLSearchParams(location.search).get('score');
+  if (scoreParam !== null) {
+    updateOGPForScore(Math.max(0, Math.min(100, parseInt(scoreParam) || 0)));
+  }
+})();
+</script>
+</body>
+</html>
